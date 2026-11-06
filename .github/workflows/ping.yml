@@ -1,0 +1,29 @@
+name: uptime-ping
+
+# Keeps BypassX Deobf Cloud warm on Render's free tier.
+# Public repo => unlimited free Actions minutes.
+on:
+  schedule:
+    - cron: "*/9 * * * *"
+  workflow_dispatch: {}
+
+permissions: {}
+
+concurrency:
+  group: ping
+  cancel-in-progress: false
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping /api/health
+        run: |
+          for i in 1 2 3; do
+            code=$(curl -s -o /dev/null -w "%{http_code}" -m 30 "https://bypassx-deobf.onrender.com/api/health") || code=000
+            echo "attempt $i: HTTP $code"
+            [ "$code" = "200" ] && exit 0
+            sleep 10
+          done
+          echo "::warning::health check did not return 200 after 3 attempts"
+          exit 0
